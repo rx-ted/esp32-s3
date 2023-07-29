@@ -9,24 +9,50 @@
 #include <RtcDS1302.h>
 void printDateTime(const RtcDateTime &dt);
 
-ThreeWire myWire(38,7,3); // IO, SCLK, CE
+ThreeWire myWire(38, 7, 3); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
 
-void setup () 
+
+#define countof(a) (sizeof(a) / sizeof(a[0]))
+
+
+
+/**
+ * @brief print date time
+ * 
+ * @param dt get now time
+ */
+void printDateTime(const RtcDateTime &dt)
 {
-    Serial.begin(115200);
+    char datestring[26];
 
-    Serial.print("compiled: ");
-    Serial.print(__DATE__);
-    Serial.println(__TIME__);
+    snprintf_P(datestring,
+               countof(datestring),
+               PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+               dt.Month(),
+               dt.Day(),
+               dt.Year(),
+               dt.Hour(),
+               dt.Minute(),
+               dt.Second());
+    Serial.print(datestring);
+}
 
+
+
+
+/**
+ * @brief clock init
+ * update time and date
+ */
+void clock_init()
+{
     Rtc.Begin();
-
     RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
     printDateTime(compiled);
     Serial.println();
 
-    if (!Rtc.IsDateTimeValid()) 
+    if (!Rtc.IsDateTimeValid())
     {
         // Common Causes:
         //    1) first time you ran and the device wasn't running yet
@@ -49,22 +75,37 @@ void setup ()
     }
 
     RtcDateTime now = Rtc.GetDateTime();
-    if (now < compiled) 
+    if (now < compiled)
     {
         Serial.println("RTC is older than compile time!  (Updating DateTime)");
         Rtc.SetDateTime(compiled);
     }
-    else if (now > compiled) 
+    else if (now > compiled)
     {
         Serial.println("RTC is newer than compile time. (this is expected)");
     }
-    else if (now == compiled) 
+    else if (now == compiled)
     {
         Serial.println("RTC is the same as compile time! (not expected but all is fine)");
     }
 }
 
-void loop () 
+void setup()
+{
+    Serial.begin(115200);
+
+    Serial.print("compiled: ");
+    Serial.print(__DATE__);
+    Serial.println(__TIME__);
+
+    // clock function
+    clock_init(); // init time and date
+    Serial.println("Init time and date~");
+
+
+}
+
+void loop()
 {
     RtcDateTime now = Rtc.GetDateTime();
 
@@ -80,22 +121,3 @@ void loop ()
 
     delay(10000); // ten seconds
 }
-
-#define countof(a) (sizeof(a) / sizeof(a[0]))
-
-void printDateTime(const RtcDateTime& dt)
-{
-    char datestring[26];
-
-    snprintf_P(datestring, 
-            countof(datestring),
-            PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
-            dt.Month(),
-            dt.Day(),
-            dt.Year(),
-            dt.Hour(),
-            dt.Minute(),
-            dt.Second() );
-    Serial.print(datestring);
-}
-
